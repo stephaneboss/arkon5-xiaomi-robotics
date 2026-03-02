@@ -1,13 +1,12 @@
 {
   "action": "BUY",
-  "confidence": 0.75,
-  "take_profit": 98.0,
-  "stop_loss": 82.0,
+  "confidence": 0.9,
+  "take_profit": null,
+  "stop_loss": null,
   "symbol": "SOL/USDT",
-  "reason": "whale accumulation on-chain confirme bullish - ARKON-5 via Gemini",
-  "timestamp": "2026-03-02T16:30:00",
-  "model": "gemini-1.5-flash-via-ha",
+  "reason": "Forte accumulation par une baleine SOL et momentum on-chain de +18% indiquent une tendance haussière.",
+  "timestamp": "2026-03-02T21:53:26",
+  "model": "gemini-via-ha",
   "pipeline": "ARKON-5 S25 Lumiere",
-  "kimi_signal": "SOL whale +15% on-chain - KIMI S25 LUMIERE SIGNAL",
-  "btc_price_usd": 69136.66
+  "kimi_signal": "SOL whale +18% on-chain momentum fort - KIMI S25 LUMIERE PIPELINE TEST"
 }
