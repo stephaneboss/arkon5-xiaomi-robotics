@@ -1,0 +1,98 @@
+---
+version: "2.0"
+
+services:
+  arkon5:
+    image: ghcr.io/stephaneboss/arkon5-xiaomi-robotics:latest
+    expose:
+      - port: 8000
+        as: 80
+        to:
+          - global: true
+    env:
+      - HF_HOME=/hf_cache
+      - TORCH_HOME=/torch_cache
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    params:
+      storage:
+        hf-cache:
+          mount: /hf_cache
+          readOnly: false
+        torch-cache:
+          mount: /torch_cache
+          readOnly: false
+
+profiles:
+  compute:
+    gpu-a100:
+      resources:
+        cpu:
+          units: 4
+        memory:
+          size: 32Gi
+        storage:
+          - size: 60Gi
+          - name: hf-cache
+            size: 40Gi
+            attributes:
+              persistent: true
+              class: beta3
+          - name: torch-cache
+            size: 10Gi
+            attributes:
+              persistent: true
+              class: beta3
+        gpu:
+          units: 1
+          attributes:
+            vendor:
+              nvidia:
+                - model: a100
+                  ram: 80Gi
+    gpu-budget:
+      resources:
+        cpu:
+          units: 4
+        memory:
+          size: 24Gi
+        storage:
+          - size: 40Gi
+          - name: hf-cache
+            size: 30Gi
+            attributes:
+              persistent: true
+              class: beta3
+          - name: torch-cache
+            size: 10Gi
+            attributes:
+              persistent: true
+              class: beta3
+        gpu:
+          units: 1
+          attributes:
+            vendor:
+              nvidia:
+                - model: rtx3090
+                  ram: 24Gi
+
+  placement:
+    akash:
+      attributes:
+        host: akash
+      signedBy:
+        anyOf:
+          - "akash1365yvmc4s7awdyj3n2sav7xfx76adc6dnmlx63"
+      pricing:
+        gpu-a100:
+          denom: uakt
+          amount: 1500
+        gpu-budget:
+          denom: uakt
+          amount: 600
+
+deployment:
+  arkon5:
+    akash:
+      profile: gpu-budget
+      count: 1
