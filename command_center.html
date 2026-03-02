@@ -128,7 +128,16 @@ const trade=await haGetState(tradeEnt);
 if(trade&&trade.state)document.getElementById(idTrade).textContent='Dernier trade : '+trade.state;
 }
 await loadEx('sensor.mexc_spot_total_2','input_text.mexc_last_trade','mexcBalance','mexcStatus','mexcConfigNote','mexcLastTrade','mexcBuy','mexcSell');
-await loadEx('sensor.cdc_balance','sensor.cdc_last_trade','cdcBalance','cdcStatus','cdcConfigNote','cdcLastTrade','cdcBuy','cdcSell');
+// CDC: Crypto.com - verifie clef input_text
+const cdcKey=await haGetState('input_text.cle_api_cdc');
+const cdcBal=document.getElementById('cdcBalance'),cdcSt=document.getElementById('cdcStatus'),cdcNote=document.getElementById('cdcConfigNote'),cdcTrd=document.getElementById('cdcLastTrade');
+if(cdcKey&&cdcKey.state&&!['unavailable','unknown','none',''].includes(cdcKey.state)){
+cdcBal.innerHTML='-- <span>USDT</span>';cdcNote.style.display='none';
+cdcSt.textContent='✓ Clef OK';cdcSt.style.color='var(--green)';
+document.getElementById('cdcBuy').disabled=false;document.getElementById('cdcSell').disabled=false;
+cdcTrd.textContent='Dernier trade : API directe requise';
+}else{cdcBal.innerHTML='-- <span>USDT</span>';cdcNote.style.display='flex';
+cdcSt.textContent=getToken()?'Clef CDC manquante':'Token requis';cdcSt.style.color='';}
 }
 document.getElementById('btnLancer').addEventListener('click',async()=>{if(!getToken()){showToast('Token HA requis','var(--yellow)');showModal();return;}showToast('Lancement pipeline S25...','var(--green)');const ok=await haCallService('shell_command','start_s25_tunnel',{});showToast(ok?'Pipeline S25 demarre !':'Verifier shell_command.start_s25_tunnel dans HA',ok?'var(--green)':'var(--yellow)');});
 document.getElementById('btnBalances').addEventListener('click',async()=>{showToast('Actualisation balances...','var(--blue)');await loadExchanges();showToast('Balances actualisees');});
