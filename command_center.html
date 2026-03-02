@@ -56,35 +56,50 @@ if(auto&&auto.state){const on=auto.state==='on';document.getElementById('autoMod
 }
 document.getElementById('autoModeToggle').addEventListener('change',()=>{showToast('Toggle via interface HA (Lovelace)','var(--blue)');setTimeout(loadPipelineStatus,600);});
 async function loadArkon5(){
+const liveR=await haGetState('input_text.ai_response');
+let liveAction=null,liveConf=0,liveReason='',liveTs='';
+if(liveR&&liveR.state&&!['En attente...','unknown','unavailable','none'].includes(liveR.state)){
+const raw=liveR.state;
+const aM=raw.match(/:[\s]*(BUY|SELL|HOLD)/i);
+const cM=raw.match(/conf:[\s]*(\d+)%/i);
+const rM=raw.match(/[|]\s*(.+)$/);
+liveAction=aM?aM[1].toUpperCase():null;
+liveConf=cM?(parseInt(cM[1])/100):0;
+liveReason=rM?rM[1].trim():raw.replace(/^ARKON-5:\s*/,'');
+if(liveR.last_changed)liveTs='\u23f1 LIVE: '+new Date(liveR.last_changed).toLocaleTimeString('fr-CA');
+}
 try{
-const r=await fetch('/ai_analysis.json',{signal:AbortSignal.timeout(4000)});
-if(\!r.ok)throw new Error();
+const r=await fetch('/ai_analysis.json?v='+Date.now(),{signal:AbortSignal.timeout(4000)});
+if(!r.ok)throw new Error();
 const d=await r.json();
-const action=(d.action||'NA').toUpperCase();
+const action=(liveAction||(d.action||'NA')).toUpperCase();
 const aEl=document.getElementById('arkonAction');
 aEl.textContent=action;
 aEl.className='action-badge '+(['BUY','SELL','HOLD'].includes(action)?action:'NA');
-const conf=parseFloat(d.confidence)||0;
+const conf=liveConf||(parseFloat(d.confidence)||0);
 document.getElementById('arkonConfVal').textContent=Math.round(conf*100)+'%';
 document.getElementById('arkonConfBar').style.width=Math.min(conf*100,100)+'%';
 document.getElementById('arkonTP').textContent=d.take_profit?'$'+fmt(d.take_profit):'--';
 document.getElementById('arkonSL').textContent=d.stop_loss?'$'+fmt(d.stop_loss):'--';
-document.getElementById('arkonReason').textContent=d.reason||d.analysis||'Aucune analyse.';
-if(d.symbol)document.getElementById('arkonSymbol').textContent='\u2014 '+d.symbol;
-if(d.timestamp)document.getElementById('arkonTs').textContent='\u23f1 Analyse du '+new Date(d.timestamp).toLocaleString('fr-CA');
+document.getElementById('arkonReason').textContent=liveReason||(d.reason||d.analysis||'Aucune analyse.');
+const sym=d.symbol||'SOL/USDT';
+document.getElementById('arkonSymbol').textContent='\u2014 '+sym;
+const modelBadge=(d.model||'').includes('gemini')?'[GEMINI]':liveAction?'[GEMINI LIVE]':'[ARKON-5]';
+document.getElementById('arkonTs').textContent=(liveTs||'')+' '+modelBadge;
 }catch{
-document.getElementById('arkonReason').textContent='Fichier /ai_analysis.json introuvable \u2014 en attente 1ere analyse ARKON-5.';
+if(liveAction){
+const aEl=document.getElementById('arkonAction');
+aEl.textContent=liveAction;
+aEl.className='action-badge '+(['BUY','SELL','HOLD'].includes(liveAction)?liveAction:'NA');
+document.getElementById('arkonConfVal').textContent=Math.round(liveConf*100)+'%';
+document.getElementById('arkonConfBar').style.width=Math.min(liveConf*100,100)+'%';
+document.getElementById('arkonReason').textContent=liveReason;
+document.getElementById('arkonTs').textContent=(liveTs||'')+' [GEMINI LIVE]';
+}else{
+document.getElementById('arkonReason').textContent='En attente analyse S25 Lumiere...';
 document.getElementById('arkonTs').textContent='';
 }
 }
-function setPriceCard(idP,idC,sym,price,change){
-const pEl=document.getElementById(idP),cEl=document.getElementById(idC);
-if(price!=null&&price!==false){
-const prev=prevPrices[sym];
-pEl.textContent=sym==='DOGE'?'$'+Number(price).toFixed(5):'$'+fmt(price);
-if(prev!==undefined&&prev!==price){const cls=price>prev?'flash-green':'flash-red';pEl.classList.remove('flash-green','flash-red');void pEl.offsetWidth;pEl.classList.add(cls);setTimeout(()=>pEl.classList.remove(cls),700);}
-prevPrices[sym]=price;}
-if(change!=null&&change!==false&&!isNaN(change)){const c=parseFloat(change),s=c>=0?'+':'';cEl.textContent=s+c.toFixed(2)+'%';cEl.className='price-change '+(c>0?'pos':c<0?'neg':'neu');}
 }
 async function loadPrices(){
 try{
