@@ -79,10 +79,11 @@ def ha_set(entity_id, value):
 
 def ha_gemini(prompt_text):
     url = f"{HA_URL}/api/services/google_generative_ai_conversation/generate_content?return_response"
-    body = json.dumps({
-        "agent_id": GEMINI_AGENT,
-        "prompt": prompt_text,
-    }).encode()
+    # Ne PAS envoyer agent_id (ou laisser vide) = HA utilise l'agent Gemini par defaut
+    body_dict = {"prompt": prompt_text}
+    if GEMINI_AGENT:
+        body_dict["agent_id"] = GEMINI_AGENT
+    body = json.dumps(body_dict).encode()
     req = urllib.request.Request(url, data=body, headers=HA_HEADERS, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
