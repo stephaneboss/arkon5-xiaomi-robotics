@@ -1,0 +1,11 @@
+{
+  "action": "HOLD",
+  "confidence": 0.62,
+  "take_profit": null,
+  "stop_loss": null,
+  "symbol": "BTC/USDT",
+  "reason": "Marche consolide en attente signal Kimi. ARKON-5 en standby - deploy Akash en cours.",
+  "timestamp": "2026-03-02T16:00:00",
+  "model": "xiaomi-robotics-0",
+  "pipeline": "ARKON-5 S25 Lumiere"
+}
