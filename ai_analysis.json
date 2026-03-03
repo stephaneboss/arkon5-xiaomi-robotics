@@ -1,12 +1,12 @@
 {
-  "action": "BUY",
-  "confidence": 0.9,
+  "action": "HOLD",
+  "confidence": 0.05,
   "take_profit": null,
   "stop_loss": null,
-  "symbol": "SOL/USDT",
-  "reason": "Forte accumulation par une baleine SOL et momentum on-chain de +18% indiquent une tendance haussière.",
-  "timestamp": "2026-03-02T21:53:26",
+  "symbol": "BTC/USDT",
+  "reason": "Operational status query received, indicating potential pipeline unavailability; holding all trading activities.",
+  "timestamp": "2026-03-03T02:17:19",
   "model": "gemini-via-ha",
   "pipeline": "ARKON-5 S25 Lumiere",
-  "kimi_signal": "SOL whale +18% on-chain momentum fort - KIMI S25 LUMIERE PIPELINE TEST"
+  "kimi_signal": "S25 STATUS: quelles automations sont unavailable et pourquoi? Prochaine etape critique?"
 }
