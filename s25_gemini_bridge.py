@@ -22,17 +22,23 @@ try:
     GEMINI_AGENT = getattr(CFG, 'GEMINI_AGENT', '')
     GH_PAT       = getattr(CFG, 'GH_PAT',       '')
     GH_REPO      = getattr(CFG, 'GH_REPO',      'stephaneboss/arkon5-xiaomi-robotics')
-    GH_FILE      = getattr(CFG, 'GH_FILE',      'ai_analysis.json')
-    POLL_SEC     = getattr(CFG, 'POLL_SEC',     10)
+    GH_FILE          = getattr(CFG, 'GH_FILE',          'ai_analysis.json')
+    POLL_SEC         = getattr(CFG, 'POLL_SEC',         10)
+    OLLAMA_URL       = getattr(CFG, 'OLLAMA_URL',       'http://10.0.0.202:11434')
+    OLLAMA_MODEL     = getattr(CFG, 'OLLAMA_MODEL',     'llama3:latest')
+    OLLAMA_FALLBACK  = getattr(CFG, 'OLLAMA_FALLBACK',  True)
 except ImportError:
     # Fallback: env vars
     HA_URL       = os.environ.get('HA_URL',       'http://homeassistant.local:8123')
     HA_TOKEN     = os.environ.get('HA_TOKEN',     '')
     GEMINI_AGENT = os.environ.get('GEMINI_AGENT', '')
     GH_PAT       = os.environ.get('GH_PAT',       '')
-    GH_REPO      = os.environ.get('GH_REPO',      'stephaneboss/arkon5-xiaomi-robotics')
-    GH_FILE      = os.environ.get('GH_FILE',      'ai_analysis.json')
-    POLL_SEC     = int(os.environ.get('POLL_SEC', '10'))
+    GH_REPO          = os.environ.get('GH_REPO',          'stephaneboss/arkon5-xiaomi-robotics')
+    GH_FILE          = os.environ.get('GH_FILE',          'ai_analysis.json')
+    POLL_SEC         = int(os.environ.get('POLL_SEC',     '10'))
+    OLLAMA_URL       = os.environ.get('OLLAMA_URL',       'http://10.0.0.202:11434')
+    OLLAMA_MODEL     = os.environ.get('OLLAMA_MODEL',     'llama3:latest')
+    OLLAMA_FALLBACK  = True
 
 if not HA_TOKEN:
     print("[ERROR] HA_TOKEN manquant. Cree s25_config.py ou set env var HA_TOKEN")
@@ -95,6 +101,27 @@ def ha_gemini(prompt_text):
         return None
     except Exception as e:
         print(f"[GEMINI] Error: {e}")
+        return None
+
+
+def ha_ollama(prompt_text):
+    """Fallback: Ollama local sur Dell Linux 10.0.0.202"""
+    body = json.dumps({
+        "model": OLLAMA_MODEL,
+        "prompt": prompt_text,
+        "stream": False,
+        "options": {"num_predict": 150, "temperature": 0.1}
+    }).encode()
+    req = urllib.request.Request(
+        f"{OLLAMA_URL}/api/generate",
+        data=body, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            data = json.loads(r.read())
+            return data.get("response", "").strip()
+    except Exception as e:
+        print(f"[OLLAMA] Error: {e}")
         return None
 
 
@@ -199,9 +226,19 @@ def process_signal(prompt_text):
     raw = ha_gemini(gemini_prompt)
 
     if not raw:
-        print("  [!] Gemini no response - skip")
-        ha_set("input_text.ai_response", "ARKON-5: ERREUR Gemini timeout")
-        return
+        print("  [!] Gemini no response")
+        if OLLAMA_FALLBACK:
+            print("  [FALLBACK] Ollama Dell Linux...")
+            raw = ha_ollama(build_gemini_prompt(prompt_text))
+            if raw:
+                print(f"  [OLLAMA] {raw[:80]}")
+                ha_set("input_text.ai_model_actif", "ARKON5_OLLAMA_FALLBACK")
+            else:
+                ha_set("input_text.ai_response", "ARKON-5: ERREUR Gemini+Ollama timeout")
+                return
+        else:
+            ha_set("input_text.ai_response", "ARKON-5: ERREUR Gemini timeout")
+            return
 
     print(f"  [2/3] Gemini raw: {raw[:120]}")
 
@@ -231,9 +268,10 @@ def process_signal(prompt_text):
 def main():
     global last_prompt
     print("=" * 55)
-    print("  S25 LUMIERE - Gemini Bridge  v1.0")
+    print("  S25 LUMIERE - Gemini Bridge  v1.1")
     print(f"  HA: {HA_URL}")
-    print(f"  Gemini agent: {GEMINI_AGENT or 'non configure'}")
+    print(f"  Gemini agent: {GEMINI_AGENT or 'defaut HA'}")
+    print(f"  Ollama fallback: {OLLAMA_URL} ({OLLAMA_MODEL})")
     print(f"  Poll: {POLL_SEC}s")
     print("=" * 55)
 
